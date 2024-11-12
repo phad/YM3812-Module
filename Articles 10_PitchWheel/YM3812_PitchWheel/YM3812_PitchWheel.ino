@@ -108,6 +108,7 @@ MIDI_CREATE_INSTANCE( HardwareSerial, Serial2, MIDI );                         /
 
 #define RPNMSB  101                                                            // Command ID for RPN Command's Most Significant Byte
 #define RPNLSB  100                                                            // Command ID for RPN Command's Least Significant Byte
+#define ResetAllControllers  121                                               // Command ID for Reset All Controllers
 #define DATAMSB 6                                                              // Command ID for RPN Value's Most Significant Byte
 #define DATALSB 38                                                             // Command ID for RPN Value's Least Significant Byte
 
@@ -154,6 +155,7 @@ void handlePitchBend( byte channel, int16_t pitchBend ){
 
 void handleControlChange( byte channel, byte command, byte val ){              // Respond to ControlChange commands so we can pick out RPN commands
   switch( command ){
+    case ResetAllControllers:  PROC_YM3812.reset();                     break; // Reset the YM3812 when instructed to reset controllers.
     case RPNMSB:  RPN_command = (RPN_command & 0x007F) | (val << 7);    break; // Capture the MSB value in bits 7 through 13 of RPN_command
     case RPNLSB:  RPN_command = (RPN_command & 0xFF80) | val;           break; // Capture the LSB value in bits 0 through 6 of RPN_command
     case DATAMSB: if( RPN_command==0 ) PROC_YM3812.setBendRange( val ); break; // Check if command is pitch bend sensitivity and then send value to YM3812 library

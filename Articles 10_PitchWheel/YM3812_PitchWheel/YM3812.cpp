@@ -248,16 +248,24 @@ void YM3812::chPlayNote( uint8_t ch ){                                         /
 * Processor Control Functions   *
 ********************************/
 
-void YM3812::reset(){
+void YM3812::reset() {
   PORTD.DIRSET = YM_IC | YM_A0 | YM_WR | YM_LATCH | YM_CS | DATA_LED;          // Set control lines high to output mode
 
   PORTD.OUTCLR = YM_LATCH;                                                     // Set the latch low to start
   PORTD.OUTSET = YM_WR | YM_CS;                                                // Set chip select and write lines high
   PORTD.OUTCLR = DATA_LED;                                                     // Turn the data LED off
-  
+
+  // Indicate reset by flickering LED over period of 500ms.
+  for ( uint8_t i = 0; i < 5; i++ ){
+    PORTD.OUTSET = DATA_LED;
+    delay(50);
+    PORTD.OUTCLR = DATA_LED;
+    delay(50);
+  }
+
   //Hard Reset the YM3812
-  PORTD.OUTCLR = YM_IC; delay(10);                                             // Hard Reset the processor by bringing Initialize / Clear line low
-  PORTD.OUTSET = YM_IC; delay(10);                                             // Complete process by bringing line high and allowing a short moment to reset
+  PORTD.OUTCLR = YM_IC; delay(50);                                             // Hard Reset the processor by bringing Initialize / Clear line low
+  PORTD.OUTSET = YM_IC; delay(50);                                             // Complete process by bringing line high and allowing a short moment to reset
 
   SPI.begin();
 
@@ -268,9 +276,12 @@ void YM3812::reset(){
     reg_A0[ch] = reg_B0[ch] = 0;                                               // Set all register info to zero
   }
   regWaveset( 1 );                                                             // Enable all wave forms (not just sine waves)
+
+  SPI.end();
 }
 
 void YM3812::sendData( uint8_t reg, uint8_t val ){
+  SPI.begin();
   PORTD.OUTSET = DATA_LED;
 
   PORTD.OUTCLR = YM_CS;                                                        // Enable the chip
@@ -301,5 +312,5 @@ void YM3812::sendData( uint8_t reg, uint8_t val ){
   PORTD.OUTSET = YM_CS;                                                        // Bring Chip Select high to disable the YM3812
 
   PORTD.OUTCLR = DATA_LED;
-
+  SPI.end();
 }
