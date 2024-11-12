@@ -50,6 +50,7 @@ direct manipulation of the chip's registers so you can build cool things like Eu
 // Optional debug light shows when information gets written to the YM3812
 #define DATA_LED 0b10000000                                                    // We can use this to see activity when data is being sent
 
+#define SPI_SETTINGS SPISettings(1500000, MSBFIRST, SPI_MODE0)
 /**************
 * Constructor *
 **************/
@@ -68,6 +69,12 @@ YM3812::YM3812(){                                                              /
 ***************************/
 
 void YM3812::reset(){
+  for (int i = 0; i < 5; i++) {
+    flickerLed();
+    delay(250);
+  }
+  delay(2000);
+
   SPI.begin();
   //Hard Reset the YM3812
   PORTD.OUTCLR = YM_IC; delay(10);                                             // Hard Reset the processor by bringing Initialize / Clear line low
@@ -83,10 +90,11 @@ void YM3812::reset(){
   }
 
   regWaveset( 1 );                                                             // Enable all wave forms (not just sine waves)
+  SPI.end();
 }
 
 void YM3812::sendData( uint8_t reg, uint8_t val ){
-  PORTD.OUTSET = DATA_LED;
+  SPI.begin();
 
   PORTD.OUTCLR = YM_CS;                                                        // Enable the chip
   PORTD.OUTCLR = YM_A0;                                                        // Put chip into register select mode
@@ -95,15 +103,16 @@ void YM3812::sendData( uint8_t reg, uint8_t val ){
   PORTD.OUTSET = YM_LATCH;                                                     // Latch register location into the 74HC595
   delayMicroseconds(1);                                                        // wait a tic.
   PORTD.OUTCLR = YM_LATCH;                                                     // Bring latch low now that the location is latched
-
   PORTD.OUTCLR = YM_WR;                                                        // Bring write low to begin the write cycle
   delayMicroseconds(10);                                                       // Delay so chip completes write cycle
   PORTD.OUTSET = YM_WR;                                                        // Bring write high
   delayMicroseconds(10);                                                       // Delay until the chip is ready to continue
-
   PORTD.OUTSET = YM_A0;                                                        // Put chip into data write mode
 
+flickerLed();
   SPI.transfer(val);                                                           // Put value onto the data bus through SPI port
+  // ^^ This blocks on a restart (only first flicker is seen), but works on program download (both flickers are seen)...
+flickerLed();
   PORTD.OUTSET = YM_LATCH;                                                     // Latch the value into the 74HC595
   delayMicroseconds(1);                                                        // wait a tic.
   PORTD.OUTCLR = YM_LATCH;                                                     // Bring latch low now that the value is latched
@@ -115,6 +124,12 @@ void YM3812::sendData( uint8_t reg, uint8_t val ){
 
   PORTD.OUTSET = YM_CS;                                                        // Bring Chip Select high to disable the YM3812
 
-  PORTD.OUTCLR = DATA_LED;
+  SPI.end();
+}
 
+void YM3812::flickerLed() {
+  PORTD.OUTSET = DATA_LED;
+  delayMicroseconds(900);
+  PORTD.OUTCLR = DATA_LED;
+  delayMicroseconds(350);
 }

@@ -108,7 +108,7 @@ class YM3812 {                                                                  
     ***************************/
     void reset();                                                                                 // Reset the sound procesor and all class settings
     void sendData(uint8_t reg, uint8_t val);                                                      // Send data to the sound processor
-
+    void flickerLed();                                                                            // Flicker the LED once.
 
     /***********************
     * Register Functions   *
